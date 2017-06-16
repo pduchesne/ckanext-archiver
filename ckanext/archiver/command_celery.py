@@ -1,5 +1,6 @@
 import sys
 import os
+import pylons
 
 from pkg_resources import iter_entry_points, VersionConflict
 import ConfigParser
@@ -7,6 +8,31 @@ from celery import Celery
 
 from ckan.lib.cli import CkanCommand
 
+
+
+def setup_translator(lang):
+    # Register a translator in this thread so that
+    # the _() functions in logic layer can work
+    from paste.registry import Registry
+    from pylons import translator
+    from pylons import request
+    from ckan.lib import i18n
+    registry = Registry()
+    registry.prepare()
+
+    class FakePylons:
+        translator = None
+    fakepylons = FakePylons()
+    class FakeRequest:
+        # Stores details of the translator
+        environ = {'pylons.pylons': fakepylons}
+    registry.register(request, FakeRequest())
+
+    # create translator
+    i18n.set_lang(None)
+
+    # pull out translator and register it
+    registry.register(translator, fakepylons.translator)
 
 class CeleryCmd(CkanCommand):
     '''
@@ -26,6 +52,13 @@ class CeleryCmd(CkanCommand):
 
     def __init__(self, name):
         super(CeleryCmd, self).__init__(name)
+
+        from ckan.lib import i18n
+        i18n.set_lang(None)
+
+        # setup the translator so that errors get reported properly
+        setup_translator('en')
+
         self.parser.add_option('--loglevel',
                                action='store',
                                dest='loglevel',
