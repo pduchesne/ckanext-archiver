@@ -53,9 +53,6 @@ class CeleryCmd(CkanCommand):
     def __init__(self, name):
         super(CeleryCmd, self).__init__(name)
 
-        from ckan.lib import i18n
-        i18n.set_lang(None)
-
         # setup the translator so that errors get reported properly
         setup_translator('en')
 
